@@ -2,7 +2,8 @@ const axios = require('axios').default
 const BaseUrl = 'https://herocoders.atlassian.net/rest/api/3/';
 const componentsUrl = BaseUrl  + 'project/IC/components';
 const eq = encodeURI('project = IC AND component = ').replace(/=/g, '%3D')
-
+var util = require('util');
+const fs = require('fs')
 const JQL = encodeURI(BaseUrl  + 'search?jql=') + eq;
 
 
@@ -32,6 +33,11 @@ const fetchIssueChecklist = () =>{
                             num_Issues: total,
                         })
                     });
+                    try {
+                        fs.writeFileSync('data.json', JSON.stringify(allIssues))
+                      } catch (err) {
+                        console.error(err)
+                    }
                     console.table(allIssues)
                 })).catch(err =>{
                     console.log(err)
