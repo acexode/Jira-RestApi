@@ -11,44 +11,53 @@ const JQL = encodeURI(BaseUrl  + 'search?jql=') + eq;
 /**
  * fetch Issue Checklist
  */
-const fetchIssueChecklist = () =>{
-    axios.get(componentsUrl).then(res =>{
+const fetchIssueChecklist =  async() =>{
+    try {
+        const res = await axios.get(componentsUrl)
         if(res.data.length){
-
             const data = res.data.filter(obj => !obj.hasOwnProperty('lead'))
-
-            if(data.length){
-                // returns array of axios request
-                const axiosReq = data.map(obj => {
-                    const name = obj.name.includes(" ") ? JSON.stringify(obj.name) : obj.name
-                    return axios.get(JQL + name)
-                })
-                const allIssues = []
-                axios.all(axiosReq).then(axios.spread((...all)=>{
-                    all.forEach((iss, idx) => {
-                        const {total} = iss.data
-                        allIssues.push({
-                            component_Id: parseInt(data[idx].id),
-                            component_Name: data[idx].name,
-                            num_Issues: total,
-                        })
-                    });
-                    try {
-                        fs.writeFileSync('data.json', JSON.stringify(allIssues))
-                      } catch (err) {
-                        console.error(err)
-                    }
-                    console.table(allIssues)
-                })).catch(err =>{
-                    console.log(err)
-                })
-            }else{
-                throw new Error("No components without lead ")
-            }
+            fetchComponentWithNoLead(data)
         }else{
             throw new Error("")
         }
-    }).catch(err => console.log('err'))
+    } catch (err) {
+        console.error(err);
+    }
+}
+const fetchComponentWithNoLead = async (data) =>{
+    try {
+        if(data.length > 0){
+            const axiosReq = data.map(obj => {
+                const name = obj.name.includes(" ") ? JSON.stringify(obj.name) : obj.name
+                return axios.get(JQL + name)
+            })
+            const allIssues = []
+            const all = await axios.all(axiosReq)
+            console.log(all.length)
+            all.forEach((iss, idx) => {
+                const {total} = iss.data
+                allIssues.push({
+                    component_Id: parseInt(data[idx].id),
+                    component_Name: data[idx].name,
+                    num_Issues: total,
+                })
+            });
+            writeTofile(allIssues)
+            console.table(allIssues)
+        }else{
+            throw new Error("No components without lead ")
+        }
+    } catch (error) {
+        console.log(error)
+    }
+}
+
+const writeTofile = (obj) => {
+    try {
+        fs.writeFileSync('data.json', JSON.stringify(obj))
+      } catch (err) {
+        console.error(err)
+    }
 }
 
 module.exports = {fetchIssueChecklist}
